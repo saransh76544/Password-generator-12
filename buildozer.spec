@@ -6,73 +6,77 @@ title = Password Generator
 # (str) Package name
 package.name = passwordgenerator
 
-# (str) Package domain
+# (str) Package domain (needed for android/ios packaging)
 package.domain = org.saransh
 
-# (str) Source code directory
+# (str) Source code where the main.py live
 source.dir = .
 
-# (list) Source file extensions to include
+# (list) Source files to include (let empty to include all the files)
 source.include_exts = py,png,jpg,kv,atlas
 
-# (str) Application version
+# (str) Application versioning
 version = 1.0
 
 # (list) Application requirements
-requirements = python3,kivymd,kivy,pillow
+requirements = python3,kivy==2.2.1,kivymd,pillow
 
 # (list) Supported orientations
 orientation = portrait
 
-# (bool) Application fullscreen
+# (bool) Indicate if the application should be fullscreen or not
 fullscreen = 0
 
-# (int) Target Android API
+# (list) Permissions
+android.permissions = INTERNET,WRITE_EXTERNAL_STORAGE,READ_EXTERNAL_STORAGE
+
+# (int) Target Android API, should be as high as possible.
 android.api = 33
 
-# (int) Minimum API your APK will support
+# (int) Minimum API your APK / AAB will support.
 android.minapi = 21
 
-# (int) Android SDK version
-android.sdk = 33
+# Remove sdk version to prevent conflict
+# (int) Android SDK version to use
+# android.sdk = 33
 
-# (str) Android NDK version
-android.ndk = 25b
+# (str) Android NDK version to use
+droid.ndk = 27.2.12479018
 
-# (int) Android NDK API level
+# (int) Android NDK API to use
 android.ndk_api = 21
 
-# (bool) Automatically accept SDK license agreements
+# (list) The Android archs to build for
+android.archs = arm64-v8a
+
+# (bool) Accept SDK license automatically
 android.accept_sdk_license = True
 
-# (list) Architectures to build for
-android.archs = arm64-v8a, armeabi-v7a
-
-# (bool) Enable backup
+# (bool) Enables Android auto backup feature
 android.allow_backup = True
 
-# (str) Debug build artifact format
-android.debug_artifact = apk
-
-# (str) Release build artifact format
-android.release_artifact = aab
-
-# (bool) Copy libs instead of making libpymodules.so
+# (bool) Copy library instead of making a libpymodules.so
 android.copy_libs = 1
 
-# (str) Logcat filter
+# (str) The format used to package the app for debug mode
+android.debug_artifact = apk
+
+# (str) The format used to package the app for release mode
+android.release_artifact = aab
+
+# (str) Android logcat filters to use
 android.logcat_filters = *:S python:D
 
 [buildozer]
 
-# (int) Log level (0=error only, 1=info, 2=debug)
+# (int) Log level (0 = error only, 1 = info, 2 = debug (with command output))
 log_level = 2
 
-# (int) Warn if run as root (0 = False, 1 = True)
+# (int) Display warning if buildozer is run as root (0 = False, 1 = True)
 warn_on_root = 1
 
-# (str) Build artifact storage directory
+# (str) Path to build artifact storage
 build_dir = ./.buildozer
 
-# (str) Output APK/AAB storage directory
+# (str) Path to build output
 bin_dir = ./bin
