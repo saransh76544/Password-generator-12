@@ -46,21 +46,19 @@ jobs:
           echo "$ANDROID_SDK_ROOT/build-tools/33.0.2" >> $GITHUB_PATH
           echo "$ANDROID_SDK_ROOT/cmdline-tools/latest/bin" >> $GITHUB_PATH
 
-      - name: Create or sanitize buildozer.spec
+      - name: Create or clean buildozer.spec
         run: |
-          # Generate if missing
           if [ ! -f buildozer.spec ]; then
             buildozer init
           fi
-          
-          # Remove duplicates
+
+          # Clean duplicate lines
           sed -i '/^android.ndk/d' buildozer.spec
           sed -i '/^android.sdk/d' buildozer.spec
           sed -i '/^android.api/d' buildozer.spec
           sed -i '/^requirements/d' buildozer.spec
           sed -i '/^android.accept_sdk_license/d' buildozer.spec
 
-          # Insert clean values
           echo "requirements = python3,kivymd,kivy,pillow" >> buildozer.spec
           echo "android.ndk = 25b" >> buildozer.spec
           echo "android.sdk = 33" >> buildozer.spec
@@ -70,11 +68,11 @@ jobs:
       - name: Check for main.py
         run: |
           if [ ! -f main.py ]; then
-            echo "::error ::main.py is missing. Please add your Kivy app's main.py file."
+            echo "::error ::main.py not found — please add your app's main file"
             exit 1
           fi
 
-      - name: Build APK with Buildozer
+      - name: Build APK
         run: |
           buildozer -v android debug
 
