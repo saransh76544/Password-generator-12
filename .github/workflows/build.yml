@@ -22,14 +22,14 @@ jobs:
         with:
           python-version: '3.10'
 
-      - name: Install dependencies
+      - name: Install system dependencies
         run: |
           sudo apt-get update
           sudo apt-get install -y openjdk-17-jdk unzip zip git python3-pip
           pip install --upgrade pip
           pip install buildozer cython virtualenv
 
-      - name: Install Android SDK & tools
+      - name: Install Android SDK and Build Tools
         run: |
           mkdir -p $ANDROID_SDK_ROOT
           cd $ANDROID_SDK_ROOT
@@ -46,18 +46,35 @@ jobs:
           echo "$ANDROID_SDK_ROOT/build-tools/33.0.2" >> $GITHUB_PATH
           echo "$ANDROID_SDK_ROOT/cmdline-tools/latest/bin" >> $GITHUB_PATH
 
-      - name: Initialize Buildozer (if needed)
+      - name: Create or sanitize buildozer.spec
         run: |
+          # Generate if missing
           if [ ! -f buildozer.spec ]; then
             buildozer init
-            sed -i 's/^requirements.*/requirements = python3,kivymd,kivy,pillow/' buildozer.spec
-            sed -i 's/^# *android.sdk.*/android.sdk = 33/' buildozer.spec
-            sed -i 's/^# *android.ndk.*/android.ndk = 25b/' buildozer.spec
-            sed -i 's/^# *android.api.*/android.api = 31/' buildozer.spec
-            echo "android.accept_sdk_license = True" >> buildozer.spec
+          fi
+          
+          # Remove duplicates
+          sed -i '/^android.ndk/d' buildozer.spec
+          sed -i '/^android.sdk/d' buildozer.spec
+          sed -i '/^android.api/d' buildozer.spec
+          sed -i '/^requirements/d' buildozer.spec
+          sed -i '/^android.accept_sdk_license/d' buildozer.spec
+
+          # Insert clean values
+          echo "requirements = python3,kivymd,kivy,pillow" >> buildozer.spec
+          echo "android.ndk = 25b" >> buildozer.spec
+          echo "android.sdk = 33" >> buildozer.spec
+          echo "android.api = 31" >> buildozer.spec
+          echo "android.accept_sdk_license = True" >> buildozer.spec
+
+      - name: Check for main.py
+        run: |
+          if [ ! -f main.py ]; then
+            echo "::error ::main.py is missing. Please add your Kivy app's main.py file."
+            exit 1
           fi
 
-      - name: Build APK
+      - name: Build APK with Buildozer
         run: |
           buildozer -v android debug
 
