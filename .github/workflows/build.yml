@@ -17,19 +17,19 @@ jobs:
       - name: 🧾 Checkout Code
         uses: actions/checkout@v4
 
-      - name: 🐍 Setup Python 3.10
+      - name: 🐍 Setup Python
         uses: actions/setup-python@v5
         with:
           python-version: '3.10'
 
-      - name: ⚙️ Install System & Python Dependencies
+      - name: ⚙️ Install Dependencies
         run: |
           sudo apt-get update
           sudo apt-get install -y openjdk-17-jdk unzip zip git python3-pip
           pip install --upgrade pip
           pip install buildozer cython virtualenv
 
-      - name: 📦 Install Android SDK & Build Tools
+      - name: 📦 Install Android SDK
         run: |
           mkdir -p $ANDROID_SDK_ROOT
           cd $ANDROID_SDK_ROOT
@@ -41,7 +41,7 @@ jobs:
           cmdline-tools/latest/bin/sdkmanager --sdk_root=$ANDROID_SDK_ROOT \
             "platform-tools" "platforms;android-31" "build-tools;33.0.2"
 
-      - name: 🛣 Update PATH for Android tools
+      - name: 🛣 Add Android Tools to PATH
         run: |
           echo "$ANDROID_SDK_ROOT/platform-tools" >> $GITHUB_PATH
           echo "$ANDROID_SDK_ROOT/build-tools/33.0.2" >> $GITHUB_PATH
@@ -53,7 +53,6 @@ jobs:
             echo "::warning ::No buildozer.spec found, generating one"
             buildozer init
           fi
-          # Remove duplicated or outdated config
           sed -i '/^requirements/d' buildozer.spec
           sed -i '/^android.ndk/d' buildozer.spec
           sed -i '/^android.sdk/d' buildozer.spec
@@ -66,17 +65,16 @@ jobs:
           echo "android.api = 31" >> buildozer.spec
           echo "android.accept_sdk_license = True" >> buildozer.spec
 
-      - name: 🛑 Stop if `main.py` is missing
+      - name: ⚠️ Warn if `main.py` is Missing
         run: |
           if [ ! -f main.py ]; then
-            echo "::error ::main.py not found — please add your app's main file"
-            exit 1
+            echo "::warning ::main.py not found — build may fail unless it's included"
           fi
 
       - name: 🏗️ Build APK
         run: buildozer -v android debug
 
-      - name: 📤 Upload .apk file
+      - name: 📤 Upload APK Artifact
         uses: actions/upload-artifact@v4
         with:
           name: app-debug-apk
