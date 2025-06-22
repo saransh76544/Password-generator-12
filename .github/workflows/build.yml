@@ -2,8 +2,7 @@ name: Build APK
 
 on:
   push:
-    branches:
-      - main
+    branches: [main]
 
 jobs:
   build:
@@ -14,68 +13,12 @@ jobs:
       ANDROID_HOME: ${{ github.workspace }}/android-sdk
 
     steps:
-      - name: 🧾 Checkout Code
+      - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: 🐍 Setup Python
+      - name: Set up Python
         uses: actions/setup-python@v5
         with:
-          python-version: '3.10'
+          python-version: 3.10
 
-      - name: ⚙️ Install Dependencies
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y openjdk-17-jdk unzip zip git python3-pip
-          pip install --upgrade pip
-          pip install buildozer cython virtualenv
-
-      - name: 📦 Install Android SDK
-        run: |
-          mkdir -p $ANDROID_SDK_ROOT
-          cd $ANDROID_SDK_ROOT
-          wget https://dl.google.com/android/repository/commandlinetools-linux-11076708_latest.zip -O sdk.zip
-          unzip sdk.zip -d cmdline-tools
-          mkdir -p cmdline-tools/latest
-          mv cmdline-tools/cmdline-tools/* cmdline-tools/latest/
-          yes | cmdline-tools/latest/bin/sdkmanager --sdk_root=$ANDROID_SDK_ROOT --licenses
-          cmdline-tools/latest/bin/sdkmanager --sdk_root=$ANDROID_SDK_ROOT \
-            "platform-tools" "platforms;android-31" "build-tools;33.0.2"
-
-      - name: 🛣 Add Android Tools to PATH
-        run: |
-          echo "$ANDROID_SDK_ROOT/platform-tools" >> $GITHUB_PATH
-          echo "$ANDROID_SDK_ROOT/build-tools/33.0.2" >> $GITHUB_PATH
-          echo "$ANDROID_SDK_ROOT/cmdline-tools/latest/bin" >> $GITHUB_PATH
-
-      - name: 🧹 Auto-Fix or Generate `buildozer.spec`
-        run: |
-          if [ ! -f buildozer.spec ]; then
-            echo "::warning ::No buildozer.spec found, generating one"
-            buildozer init
-          fi
-          sed -i '/^requirements/d' buildozer.spec
-          sed -i '/^android.ndk/d' buildozer.spec
-          sed -i '/^android.sdk/d' buildozer.spec
-          sed -i '/^android.api/d' buildozer.spec
-          sed -i '/^android.accept_sdk_license/d' buildozer.spec
-
-          echo "requirements = python3,kivymd,kivy,pillow" >> buildozer.spec
-          echo "android.ndk = 25b" >> buildozer.spec
-          echo "android.sdk = 33" >> buildozer.spec
-          echo "android.api = 31" >> buildozer.spec
-          echo "android.accept_sdk_license = True" >> buildozer.spec
-
-      - name: ⚠️ Warn if `main.py` is Missing
-        run: |
-          if [ ! -f main.py ]; then
-            echo "::warning ::main.py not found — build may fail unless it's included"
-          fi
-
-      - name: 🏗️ Build APK
-        run: buildozer -v android debug
-
-      - name: 📤 Upload APK Artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: app-debug-apk
-          path: bin/*.apk
+      # More steps go here...
