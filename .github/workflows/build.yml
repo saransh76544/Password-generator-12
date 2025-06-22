@@ -3,77 +3,55 @@ name: Build and Export Kivy APK
 on:
   push:
     branches: [main]
-  workflow_dispatch:
 
 jobs:
   build-apk:
     runs-on: ubuntu-latest
 
-    env:
-      ANDROID_SDK_ROOT: ${{ github.workspace }}/android-sdk
-      ANDROID_HOME: ${{ github.workspace }}/android-sdk
-
     steps:
-    - name: ✨ Checkout repository
-      uses: actions/checkout@v4
+      - name: 📋 Checkout Repository
+        uses: actions/checkout@v4
 
-    - name: 🔍 Validate Required Files Exist
-      run: |
-        if [ ! -f main.py ]; then
-          echo "::error ::Missing main.py in repo root"
-          exit 1
-        fi
-        if [ ! -f buildozer.spec ]; then
-          echo "::error ::Missing buildozer.spec in repo root"
-          exit 1
-        fi
+      - name: ⚖️ Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
 
-    - name: 🔳 Set up Python 3.10
-      uses: actions/setup-python@v5
-      with:
-        python-version: '3.10'
+      - name: 📦 Cache pip dependencies
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/pip
+          key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements.txt') }}
+          restore-keys: |
+            ${{ runner.os }}-pip-
 
-    - name: ✨ Create virtualenv & upgrade pip
-      run: |
-        python -m venv venv
-        source venv/bin/activate
-        pip install --upgrade pip
+      - name: 🛠 Install system dependencies
+        run: |
+          sudo apt update
+          sudo apt install -y \
+            python3-pip \
+            git zip unzip openjdk-17-jdk \
+            libffi-dev libssl-dev \
+            build-essential \
+            libsqlite3-dev zlib1g-dev \
+            libncurses5-dev libncursesw5-dev \
+            libreadline6-dev libgdbm-dev libbz2-dev \
+            liblzma-dev libblas-dev libatlas-base-dev \
+            libjpeg-dev libfreetype6-dev pkg-config \
+            libsdl2-dev libsdl2-image-dev libsdl2-mixer-dev \
+            libsdl2-ttf-dev libportmidi-dev ffmpeg
 
-    - name: ⚙️ Install system dependencies
-      run: |
-        sudo apt-get update
-        sudo apt-get install -y zip unzip openjdk-17-jdk git libtool pkg-config
+      - name: 🔧 Install Buildozer and dependencies
+        run: |
+          python3 -m pip install --upgrade pip
+          pip install buildozer cython
 
-    - name: 💪 Install Python build tools
-      run: |
-        source venv/bin/activate
-        pip install --upgrade Cython buildozer virtualenv
+      - name: 🔨 Build APK
+        run: |
+          buildozer android debug
 
-    - name: 🚀 Setup Android SDK
-      run: |
-        mkdir -p $ANDROID_SDK_ROOT
-        cd $ANDROID_SDK_ROOT
-        wget https://dl.google.com/android/repository/commandlinetools-linux-11076708_latest.zip -O sdk.zip
-        unzip -q sdk.zip -d cmdline-tools
-        mkdir -p cmdline-tools/latest
-        mv cmdline-tools/cmdline-tools/* cmdline-tools/latest/
-        yes | cmdline-tools/latest/bin/sdkmanager --sdk_root=$ANDROID_SDK_ROOT --licenses
-        cmdline-tools/latest/bin/sdkmanager --sdk_root=$ANDROID_SDK_ROOT \
-          "platform-tools" "platforms;android-31" "build-tools;33.0.2" "ndk;25.2.9519653"
-
-    - name: 📆 Update PATH for Android SDK
-      run: |
-        echo "$ANDROID_SDK_ROOT/platform-tools" >> $GITHUB_PATH
-        echo "$ANDROID_SDK_ROOT/build-tools/33.0.2" >> $GITHUB_PATH
-        echo "$ANDROID_SDK_ROOT/cmdline-tools/latest/bin" >> $GITHUB_PATH
-
-    - name: 🛠️ Build APK using Buildozer
-      run: |
-        source venv/bin/activate
-        buildozer android debug
-
-    - name: 📦 Upload APK artifact
-      uses: actions/upload-artifact@v4
-      with:
-        name: kivy-apk
-        path: bin/*.apk
+      - name: 📥 Upload APK Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: PasswordGenerator-APK
+          path: bin/*.apk
