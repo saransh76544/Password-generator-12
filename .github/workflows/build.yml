@@ -1,4 +1,4 @@
-name: Build Kivy APK
+name: Build and Export Kivy APK
 
 on:
   push:
@@ -6,7 +6,7 @@ on:
   workflow_dispatch:
 
 jobs:
-  build:
+  build-apk:
     runs-on: ubuntu-latest
 
     env:
@@ -14,42 +14,42 @@ jobs:
       ANDROID_HOME: ${{ github.workspace }}/android-sdk
 
     steps:
-    - name: 📥 Checkout Code
+    - name: ✨ Checkout repository
       uses: actions/checkout@v4
 
-    - name: 🔍 Check required files
+    - name: 🔍 Validate Required Files Exist
       run: |
         if [ ! -f main.py ]; then
-          echo "::error ::main.py is missing!"
+          echo "::error ::Missing main.py in repo root"
           exit 1
         fi
         if [ ! -f buildozer.spec ]; then
-          echo "::error ::buildozer.spec is missing!"
+          echo "::error ::Missing buildozer.spec in repo root"
           exit 1
         fi
 
-    - name: 🐍 Set Up Python
+    - name: 🔳 Set up Python 3.10
       uses: actions/setup-python@v5
       with:
-        python-version: "3.10"
+        python-version: '3.10'
 
-    - name: 🧪 Create Virtual Environment
+    - name: ✨ Create virtualenv & upgrade pip
       run: |
         python -m venv venv
         source venv/bin/activate
         pip install --upgrade pip
 
-    - name: ⚙️ Install Linux Dependencies
+    - name: ⚙️ Install system dependencies
       run: |
         sudo apt-get update
-        sudo apt-get install -y openjdk-17-jdk zip unzip git python3-pip libtool pkg-config
+        sudo apt-get install -y zip unzip openjdk-17-jdk git libtool pkg-config
 
-    - name: 🛠️ Install Buildozer & Python Tools
+    - name: 💪 Install Python build tools
       run: |
         source venv/bin/activate
-        pip install cython virtualenv buildozer
+        pip install --upgrade Cython buildozer virtualenv
 
-    - name: 📦 Download and Setup Android SDK
+    - name: 🚀 Setup Android SDK
       run: |
         mkdir -p $ANDROID_SDK_ROOT
         cd $ANDROID_SDK_ROOT
@@ -59,21 +59,21 @@ jobs:
         mv cmdline-tools/cmdline-tools/* cmdline-tools/latest/
         yes | cmdline-tools/latest/bin/sdkmanager --sdk_root=$ANDROID_SDK_ROOT --licenses
         cmdline-tools/latest/bin/sdkmanager --sdk_root=$ANDROID_SDK_ROOT \
-          "platform-tools" "platforms;android-31" "build-tools;33.0.2"
+          "platform-tools" "platforms;android-31" "build-tools;33.0.2" "ndk;25.2.9519653"
 
-    - name: ➕ Update PATH
+    - name: 📆 Update PATH for Android SDK
       run: |
         echo "$ANDROID_SDK_ROOT/platform-tools" >> $GITHUB_PATH
         echo "$ANDROID_SDK_ROOT/build-tools/33.0.2" >> $GITHUB_PATH
         echo "$ANDROID_SDK_ROOT/cmdline-tools/latest/bin" >> $GITHUB_PATH
 
-    - name: 🏗️ Build APK with Buildozer
+    - name: 🛠️ Build APK using Buildozer
       run: |
         source venv/bin/activate
         buildozer android debug
 
-    - name: 📤 Upload APK Artifact
+    - name: 📦 Upload APK artifact
       uses: actions/upload-artifact@v4
       with:
-        name: password-generator-apk
+        name: kivy-apk
         path: bin/*.apk
