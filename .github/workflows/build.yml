@@ -1,9 +1,9 @@
-name: Build APK
+name: Build Kivy APK
 
 on:
   push:
-    branches:
-      - main
+    branches: [main]
+  workflow_dispatch:
 
 jobs:
   build:
@@ -14,23 +14,66 @@ jobs:
       ANDROID_HOME: ${{ github.workspace }}/android-sdk
 
     steps:
-      - name: ✅ Checkout Code
-        uses: actions/checkout@v4
+    - name: 📥 Checkout Code
+      uses: actions/checkout@v4
 
-      - name: 🐍 Setup Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: '3.10'
+    - name: 🔍 Check required files
+      run: |
+        if [ ! -f main.py ]; then
+          echo "::error ::main.py is missing!"
+          exit 1
+        fi
+        if [ ! -f buildozer.spec ]; then
+          echo "::error ::buildozer.spec is missing!"
+          exit 1
+        fi
 
-      - name: ⚙️ Install System & Python Dependencies
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y openjdk-17-jdk unzip zip git python3-pip
-          pip install --upgrade pip
-          pip install buildozer cython virtualenv
+    - name: 🐍 Set Up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: "3.10"
 
-      - name: 📦 Install Android SDK & Tools
-        run: |
-          mkdir -p $ANDROID_SDK_ROOT
-          cd $ANDROID_SDK_ROOT
-          wg
+    - name: 🧪 Create Virtual Environment
+      run: |
+        python -m venv venv
+        source venv/bin/activate
+        pip install --upgrade pip
+
+    - name: ⚙️ Install Linux Dependencies
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y openjdk-17-jdk zip unzip git python3-pip libtool pkg-config
+
+    - name: 🛠️ Install Buildozer & Python Tools
+      run: |
+        source venv/bin/activate
+        pip install cython virtualenv buildozer
+
+    - name: 📦 Download and Setup Android SDK
+      run: |
+        mkdir -p $ANDROID_SDK_ROOT
+        cd $ANDROID_SDK_ROOT
+        wget https://dl.google.com/android/repository/commandlinetools-linux-11076708_latest.zip -O sdk.zip
+        unzip -q sdk.zip -d cmdline-tools
+        mkdir -p cmdline-tools/latest
+        mv cmdline-tools/cmdline-tools/* cmdline-tools/latest/
+        yes | cmdline-tools/latest/bin/sdkmanager --sdk_root=$ANDROID_SDK_ROOT --licenses
+        cmdline-tools/latest/bin/sdkmanager --sdk_root=$ANDROID_SDK_ROOT \
+          "platform-tools" "platforms;android-31" "build-tools;33.0.2"
+
+    - name: ➕ Update PATH
+      run: |
+        echo "$ANDROID_SDK_ROOT/platform-tools" >> $GITHUB_PATH
+        echo "$ANDROID_SDK_ROOT/build-tools/33.0.2" >> $GITHUB_PATH
+        echo "$ANDROID_SDK_ROOT/cmdline-tools/latest/bin" >> $GITHUB_PATH
+
+    - name: 🏗️ Build APK with Buildozer
+      run: |
+        source venv/bin/activate
+        buildozer android debug
+
+    - name: 📤 Upload APK Artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: password-generator-apk
+        path: bin/*.apk
