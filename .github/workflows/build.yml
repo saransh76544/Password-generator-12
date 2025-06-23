@@ -6,34 +6,33 @@ on:
 
 jobs:
   build-apk:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
 
     steps:
-    - name: ✅ Checkout code
-      uses: actions/checkout@v3
+      - name: 🔁 Checkout code
+        uses: actions/checkout@v4
 
-    - name: ⚙️ Set up Python
-      uses: actions/setup-python@v4
-      with:
-        python-version: '3.10'
+      - name: 🐍 Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.10'
 
-    - name: 🧪 Install dependencies
-      run: |
-        sudo apt update
-        sudo apt install -y git zip unzip openjdk-17-jdk
-        pip install --upgrade pip
-        pip install buildozer cython
+      - name: 📦 Install Buildozer and dependencies
+        run: |
+          sudo apt update
+          sudo apt install -y zip unzip openjdk-17-jdk python3-pip git
+          pip install --upgrade pip
+          pip install cython
+          pip install buildozer
 
-    - name: 🔐 Accept Android licenses
-      run: yes | sdkmanager --licenses || true
+      - name: 📂 Build APK using Buildozer
+        run: |
+          buildozer android debug
 
-    - name: 🛠️ Build APK with Buildozer
-      run: |
-        buildozer android debug
+      - name: 🚀 Upload APK artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: password-generator-apk
+          path: bin/*.apk
 
-    - name: 📦 Upload APK
-      uses: actions/upload-artifact@v3
-      with:
-        name: PasswordGenerator.apk
-        path: bin/*.apk
 
