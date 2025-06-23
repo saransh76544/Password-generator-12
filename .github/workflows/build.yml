@@ -2,56 +2,38 @@ name: Build and Export Kivy APK
 
 on:
   push:
-    branches: [main]
+    branches: [ main ]
 
 jobs:
   build-apk:
     runs-on: ubuntu-latest
 
     steps:
-      - name: 📋 Checkout Repository
-        uses: actions/checkout@v4
+    - name: ✅ Checkout code
+      uses: actions/checkout@v3
 
-      - name: ⚖️ Set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: '3.10'
+    - name: ⚙️ Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.10'
 
-      - name: 📦 Cache pip dependencies
-        uses: actions/cache@v4
-        with:
-          path: ~/.cache/pip
-          key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements.txt') }}
-          restore-keys: |
-            ${{ runner.os }}-pip-
+    - name: 🧪 Install dependencies
+      run: |
+        sudo apt update
+        sudo apt install -y git zip unzip openjdk-17-jdk
+        pip install --upgrade pip
+        pip install buildozer cython
 
-      - name: 🛠 Install system dependencies
-        run: |
-          sudo apt update
-          sudo apt install -y \
-            python3-pip \
-            git zip unzip openjdk-17-jdk \
-            libffi-dev libssl-dev \
-            build-essential \
-            libsqlite3-dev zlib1g-dev \
-            libncurses5-dev libncursesw5-dev \
-            libreadline6-dev libgdbm-dev libbz2-dev \
-            liblzma-dev libblas-dev libatlas-base-dev \
-            libjpeg-dev libfreetype6-dev pkg-config \
-            libsdl2-dev libsdl2-image-dev libsdl2-mixer-dev \
-            libsdl2-ttf-dev libportmidi-dev ffmpeg
+    - name: 🔐 Accept Android licenses
+      run: yes | sdkmanager --licenses || true
 
-      - name: 🔧 Install Buildozer and dependencies
-        run: |
-          python3 -m pip install --upgrade pip
-          pip install buildozer cython
+    - name: 🛠️ Build APK with Buildozer
+      run: |
+        buildozer android debug
 
-      - name: 🔨 Build APK
-        run: |
-          buildozer android debug
+    - name: 📦 Upload APK
+      uses: actions/upload-artifact@v3
+      with:
+        name: PasswordGenerator.apk
+        path: bin/*.apk
 
-      - name: 📥 Upload APK Artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: PasswordGenerator-APK
-          path: bin/*.apk
